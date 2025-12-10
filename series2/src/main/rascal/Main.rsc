@@ -40,25 +40,32 @@ list[str] cleanCodeFragment(str codeFragment) {
 }
 
 //returns a list of Type 1 clones found in the given ASTs
-list[map[str, list[loc]]] Type1Clones(list[Declaration] asts, int minLines) {
-    map[str, list[loc]] cloneMap = ();
-    list[Stat] statements = [];
+// list[map[str, list[loc]]] Type1Clones(list[Declaration] asts, int minLines) {
+//     map[str, list[loc]] cloneMap = ();
+//     list[Stat] statements = [];
 
-    for (ast <- asts) {
-        //TODO: FIND STATEMENTS AND MATCH THEM TO S
-        s = ast.body.declarations.methodDeclaration.body.statement*;
-        statements += s;
-    }
-}
+//     for (ast <- asts) {
+//         //TODO: FIND STATEMENTS AND MATCH THEM TO S
+//         s = ast.body.declarations.methodDeclaration.body.statement*;
+//         statements += s;
+//     }
+// }
 
 int main(int testArgument=0) {
     //asts = getASTs(|home:///Documents/School/Master/Software-Evolution/Series2/smallsql0.21_src|);
     //asts = getASTs(|home:///Documents/School/Master/Software-Evolution/Series2/hsqldb-2.3.1|);
-    asts = getASTs(|home:///Documents/School/Master/Software-Evolution/Series2/CloneTesting|);
-    int fileCount = size(asts);
-    int ploc = countPhysicalLocFromAsts(asts);
+    //asts = getASTs(|home:///Documents/School/Master/Software-Evolution/Series2/CloneTesting|);
+
+    //It is better to do it like this by adding the projects to the workspace instead using your own directory
+    asts = getASTs(|project://smallsql0.21_src/|);
+    astsTwo = getASTs(|project://hsqldb-2.3.1/|);
+    astsThree = getASTs(|project://CloneTesting|);
+
+
+    int fileCount = size(astsThree);
+    int ploc = countPhysicalLocFromAsts(astsThree);
     println("File count: <fileCount>");
     println("Physical LOC: <ploc>");
-    return testArgument;
+    return 0;
 }
 
