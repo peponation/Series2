@@ -57,6 +57,47 @@ public void printCloneStats(CloneStats s) {
 }
 
 
+public str codeFromLoc(loc fragment) {
+    list[str] lines = readFileLines(fragment);
+    str result = "";
+    for (str line <- lines) {
+        result += line + "\n";
+    }
+    return result;
+}
+
+public void printExampleClones(list[CloneClass] classes, int maxClasses) {
+    int classLimit = min(maxClasses, size(classes));
+
+    for (int i <- [0..classLimit-1]) {
+        CloneClass c = classes[i];
+
+        int id;
+        list[loc] members = [];
+
+        // Destructure the CloneClass
+        switch (c) {
+            case cloneClass(int cid, list[loc] ms): {
+                id = cid;
+                members = ms;
+            }
+        }
+
+        println("=== Example clone class <id> (members: <size(members)>) ===");
+
+        int memberLimit = size(members);  // 👈 show *all* members
+        for (int j <- [0..memberLimit-1]) {
+            loc l = members[j];
+            println("--- Member <j + 1> at <l> ---");
+            println(codeFromLoc(l));
+        }
+
+        println(""); // blank line between classes
+    }
+}
+
+
+
 
 int main() {
     asts = getASTs(|project://smallsql0.21_src/|);
@@ -69,28 +110,24 @@ int main() {
     println("Physical LOC: <ploc>");
 
     // --- AST-based Type 1 clone detection ---
-    int minLines = 2;
+    int minLines = 4;
     list[CloneClass] rawType1 = detectType1MethodClonesAst(asts, minLines);
     list[CloneClass] type1 = removeSubsumedClasses(rawType1);
     println("AST-based Type 1 method clone classes after subsumption (\>= <minLines> lines): <size(type1)>");
 
-    // Example clones (you already had this, keep it for 'example clones' requirement)
-    int limit = min(5, size(type1));
-    for (CloneClass c <- type1[0..limit]) {
-        println("Clone class <c.id> with <size(c.members)> occurrences:");
-        for (loc l <- c.members) {
-            println("  <l>");
-        }
-    }
+    // Example clones (printed with actual code)
+    printExampleClones(type1, 3);  // e.g., show 3 clone classes
+
 
     // --- Statistics ---
     CloneStats stats = computeCloneStats(type1, ploc);
     printCloneStats(stats);
 
-    // --- JSON output ---
+    // JSON output: stats + clone classes together
     loc outFile = |project://series2/output/type1_clones.json|;
-    writeType1ClonesToJson(type1, outFile);
-    println("Wrote Type 1 clone classes to <outFile>");
+    writeCloneReportToJson(type1, stats, outFile);
+    println("Wrote Type 1 clone report (stats + classes) to <outFile>");
+
 
     return 0;
 }

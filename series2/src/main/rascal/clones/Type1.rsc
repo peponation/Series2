@@ -23,6 +23,60 @@ data CloneStats = cloneStats(
     int biggestCloneClassId      // id of that largest clone class
 );
 
+
+public str toJsonStats(CloneStats s) {
+    int totalLoc;
+    int duplicatedLoc;
+    real duplicatedPercentage;
+    int cloneCount;
+    int cloneClassCount;
+    int biggestCloneLines;
+    loc biggestCloneLocation;
+    int biggestCloneClassSize;
+    int biggestCloneClassId;
+
+    // Destructure the CloneStats value
+    switch (s) {
+        case cloneStats(
+            int t,
+            int d,
+            real p,
+            int c,
+            int cc,
+            int bcl,
+            loc bl,
+            int bccs,
+            int bccid
+        ): {
+            totalLoc             = t;
+            duplicatedLoc        = d;
+            duplicatedPercentage = p;
+            cloneCount           = c;
+            cloneClassCount      = cc;
+            biggestCloneLines    = bcl;
+            biggestCloneLocation = bl;
+            biggestCloneClassSize = bccs;
+            biggestCloneClassId   = bccid;
+        }
+    }
+
+    str json = "{ ";
+    json += "\"totalLoc\": <totalLoc>, ";
+    json += "\"duplicatedLoc\": <duplicatedLoc>, ";
+    json += "\"duplicatedPercentage\": <duplicatedPercentage>, ";
+    json += "\"cloneCount\": <cloneCount>, ";
+    json += "\"cloneClassCount\": <cloneClassCount>, ";
+    json += "\"biggestCloneLines\": <biggestCloneLines>, ";
+    json += "\"biggestCloneLocation\": \"<biggestCloneLocation>\", ";
+    json += "\"biggestCloneClassSize\": <biggestCloneClassSize>, ";
+    json += "\"biggestCloneClassId\": <biggestCloneClassId>";
+    json += " }";
+
+    return json;
+}
+
+
+
 /**
  * Collect all method bodies (as <loc, Statement>) from the given ASTs.
  */
@@ -282,22 +336,30 @@ str toJsonCloneClass(CloneClass c) {
  *   { "id": 2, "members": ["..."] }
  * ]
  */
-public void writeType1ClonesToJson(list[CloneClass] classes, loc outFile) {
-    str json = "[\n";
+public void writeCloneReportToJson(list[CloneClass] classes, CloneStats stats, loc outFile) {
+    // 1. Stats part
+    str statsJson = toJsonStats(stats);
 
+    // 2. Clone classes array
+    str classesJson = "[\n";
     int n = size(classes);
     int idx = 0;
-
     for (CloneClass c <- classes) {
         idx += 1;
-        json += toJsonCloneClass(c);
+        classesJson += toJsonCloneClass(c);
         if (idx < n) {
-            json += ",\n";
+            classesJson += ",\n";
         }
     }
+    classesJson += "\n]";
 
-    json += "\n]\n";
+    // 3. Wrap into a top-level JSON object
+    str json = "{\n";
+    json += "  \"stats\": " + statsJson + ",\n";
+    json += "  \"cloneClasses\": " + classesJson + "\n";
+    json += "}\n";
 
-    // Actually write the JSON text to the given file location
     writeFile(outFile, json);
 }
+
+
