@@ -86,7 +86,10 @@ public void printExampleClones(list[CloneClass] classes, int maxClasses) {
         println("=== Example clone class <id> (members: <size(members)>) ===");
 
         int memberLimit = size(members);  // 👈 show *all* members
-        for (int j <- [0..memberLimit-1]) {
+
+
+        for (int j <- [0..memberLimit]) { // [0..2] => 0,1
+            println("--- j = <j> ---");
             loc l = members[j];
             println("--- Member <j + 1> at <l> ---");
             println(codeFromLoc(l));
