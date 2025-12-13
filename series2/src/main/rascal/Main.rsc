@@ -59,6 +59,13 @@ int main() {
         }
     }
 
+    // --- Write JSON output to a directory ---
+    // Make sure this directory exists in your project:
+    //   series2/src/main/rascal/output/
+    loc outFile = |project://series2/output/type1_clones.json|;
+    writeType1ClonesToJson(type1, outFile);
+    println("Wrote Type 1 clone classes to <outFile>");
+
     return 0;
 }
 

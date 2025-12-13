@@ -5,6 +5,8 @@ import Node;
 import List;
 import Map;
 
+import IO;
+
 // Simple clone class container
 data CloneClass = cloneClass(int id, list[loc] members);
 
@@ -69,4 +71,65 @@ public list[CloneClass] detectType1MethodClonesAst(list[Declaration] asts, int m
     }
 
     return classes;
+}
+
+
+// Convert a single CloneClass to a JSON object string
+str toJsonCloneClass(CloneClass c) {
+    int id;
+    list[loc] members = [];
+
+    // Pattern match on the CloneClass value
+    switch (c) {
+        case cloneClass(int cid, list[loc] ms): {
+            id = cid;
+            members = ms;
+        }
+    }
+
+    // Build JSON array for the member locations
+    str membersJson = "[";
+    bool first = true;
+    for (loc l <- members) {
+        if (!first) {
+            membersJson += ", ";
+        }
+        first = false;
+        // Store the URI form of the location as a JSON string
+        membersJson += "\"<l>\"";
+    }
+    membersJson += "]";
+
+    // Return JSON object for this clone class
+    return "{ \"id\": <id>, \"members\": " + membersJson + " }";
+}
+
+
+/**
+ * Write the given Type 1 clone classes to a JSON file.
+ *
+ * Example JSON structure:
+ * [
+ *   { "id": 1, "members": ["|java+compilationUnit:///...|", "..."] },
+ *   { "id": 2, "members": ["..."] }
+ * ]
+ */
+public void writeType1ClonesToJson(list[CloneClass] classes, loc outFile) {
+    str json = "[\n";
+
+    int n = size(classes);
+    int idx = 0;
+
+    for (CloneClass c <- classes) {
+        idx += 1;
+        json += toJsonCloneClass(c);
+        if (idx < n) {
+            json += ",\n";
+        }
+    }
+
+    json += "\n]\n";
+
+    // Actually write the JSON text to the given file location
+    writeFile(outFile, json);
 }
