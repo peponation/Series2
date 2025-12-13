@@ -10,6 +10,19 @@ import IO;
 // Simple clone class container
 data CloneClass = cloneClass(int id, list[loc] members);
 
+// Aggregated statistics for a project
+data CloneStats = cloneStats(
+    int totalLoc,                // total physical LOC of the project
+    int duplicatedLoc,           // total LOC that are part of clones
+    real duplicatedPercentage,   // duplicatedLoc / totalLoc * 100
+    int cloneCount,              // total number of clone fragments (members)
+    int cloneClassCount,         // number of clone classes
+    int biggestCloneLines,       // size (in lines) of the largest single clone fragment
+    loc  biggestCloneLocation,   // where that largest clone fragment is
+    int biggestCloneClassSize,   // largest clone class size (number of members)
+    int biggestCloneClassId      // id of that largest clone class
+);
+
 /**
  * Collect all method bodies (as <loc, Statement>) from the given ASTs.
  */
@@ -109,6 +122,78 @@ public list[CloneClass] removeSubsumedClasses(list[CloneClass] classes) {
 
     return result;
 }
+
+
+public CloneStats computeCloneStats(list[CloneClass] classes, int totalLoc) {
+    int cloneClassCount = size(classes);
+    int cloneCount = 0;
+
+    // Track unique clone fragments so we don't double-count lines
+    set[loc] uniqueMembers = {};
+
+    int biggestCloneLines = 0;
+    loc biggestCloneLocation = |unknown:///|;
+
+    int biggestCloneClassSize = 0;
+    int biggestCloneClassId = -1;
+
+    // Walk over all clone classes
+    for (CloneClass c <- classes) {
+        int classId;
+        list[loc] members;
+
+        // Destructure CloneClass
+        switch (c) {
+            case cloneClass(int cid, list[loc] ms): {
+                classId = cid;
+                members = ms;
+            }
+        }
+
+        // Update cloneCount (each member is one clone fragment)
+        cloneCount += size(members);
+
+        // Update biggest clone class (in members)
+        if (size(members) > biggestCloneClassSize) {
+            biggestCloneClassSize = size(members);
+            biggestCloneClassId = classId;
+        }
+
+        // Process each member location
+        for (loc l <- members) {
+            uniqueMembers += { l };
+
+            int lines = l.end.line - l.begin.line + 1;
+            if (lines > biggestCloneLines) {
+                biggestCloneLines = lines;
+                biggestCloneLocation = l;
+            }
+        }
+    }
+
+    // Sum the LOC of all unique clone fragments
+    int duplicatedLoc = 0;
+    for (loc l <- uniqueMembers) {
+        duplicatedLoc += l.end.line - l.begin.line + 1;
+    }
+
+    real duplicatedPercentage =
+        totalLoc == 0 ? 0.0 : (duplicatedLoc * 100.0) / totalLoc;
+
+    return cloneStats(
+        totalLoc,
+        duplicatedLoc,
+        duplicatedPercentage,
+        cloneCount,
+        cloneClassCount,
+        biggestCloneLines,
+        biggestCloneLocation,
+        biggestCloneClassSize,
+        biggestCloneClassId
+    );
+}
+
+
 
 
 

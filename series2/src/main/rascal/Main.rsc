@@ -32,31 +32,49 @@ int countPhysicalLocFromAsts(list[Declaration] asts) {
 }
 
 
+public void printCloneStats(CloneStats s) {
+    switch (s) {
+        case cloneStats(
+            int totalLoc,
+            int duplicatedLoc,
+            real duplicatedPercentage,
+            int cloneCount,
+            int cloneClassCount,
+            int biggestCloneLines,
+            loc biggestCloneLocation,
+            int biggestCloneClassSize,
+            int biggestCloneClassId
+        ): {
+            println("=== Clone Statistics ===");
+            println("Total LOC: <totalLoc>");
+            println("Duplicated LOC: <duplicatedLoc> (<duplicatedPercentage>% of total)");
+            println("Number of clone classes: <cloneClassCount>");
+            println("Number of clones (fragments): <cloneCount>");
+            println("Biggest clone (in lines): <biggestCloneLines> at <biggestCloneLocation>");
+            println("Biggest clone class (members): <biggestCloneClassSize> (class id <biggestCloneClassId>)");
+        }
+    }
+}
+
+
 
 int main() {
-    //It is better to do it like this by adding the projects to the workspace instead using your own directory
     asts = getASTs(|project://smallsql0.21_src/|);
-    // astsTwo = getASTs(|project://hsqldb-2.3.1/|);
     // asts = getASTs(|project://CloneTesting|);
-
+    // astsTwo = getASTs(|project://hsqldb-2.3.1/|);
 
     int fileCount = size(asts);
     int ploc = countPhysicalLocFromAsts(asts);
     println("File count: <fileCount>");
     println("Physical LOC: <ploc>");
 
-    // --- Type 1 clone detection ---
-    // --- AST-based Type 1 clone detection (method-level) ---
+    // --- AST-based Type 1 clone detection ---
     int minLines = 2;
     list[CloneClass] rawType1 = detectType1MethodClonesAst(asts, minLines);
-
-    // Apply subsumption: remove classes strictly included in others
     list[CloneClass] type1 = removeSubsumedClasses(rawType1);
-
     println("AST-based Type 1 method clone classes after subsumption (\>= <minLines> lines): <size(type1)>");
 
-
-
+    // Example clones (you already had this, keep it for 'example clones' requirement)
     int limit = min(5, size(type1));
     for (CloneClass c <- type1[0..limit]) {
         println("Clone class <c.id> with <size(c.members)> occurrences:");
@@ -65,13 +83,16 @@ int main() {
         }
     }
 
-    // --- Write JSON output to a directory ---
-    // Make sure this directory exists in your project:
-    //   series2/src/main/rascal/output/
+    // --- Statistics ---
+    CloneStats stats = computeCloneStats(type1, ploc);
+    printCloneStats(stats);
+
+    // --- JSON output ---
     loc outFile = |project://series2/output/type1_clones.json|;
     writeType1ClonesToJson(type1, outFile);
     println("Wrote Type 1 clone classes to <outFile>");
 
     return 0;
 }
+
 
