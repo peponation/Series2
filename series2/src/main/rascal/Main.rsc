@@ -47,9 +47,15 @@ int main() {
 
     // --- Type 1 clone detection ---
     // --- AST-based Type 1 clone detection (method-level) ---
-    int minLines = 2; // start small for CloneTesting, you can increase later
-    list[CloneClass] type1 = detectType1MethodClonesAst(asts, minLines);
-    println("AST-based Type 1 method clone classes (\>= <minLines> lines): <size(type1)>");
+    int minLines = 2;
+    list[CloneClass] rawType1 = detectType1MethodClonesAst(asts, minLines);
+
+    // Apply subsumption: remove classes strictly included in others
+    list[CloneClass] type1 = removeSubsumedClasses(rawType1);
+
+    println("AST-based Type 1 method clone classes after subsumption (\>= <minLines> lines): <size(type1)>");
+
+
 
     int limit = min(5, size(type1));
     for (CloneClass c <- type1[0..limit]) {

@@ -29,6 +29,89 @@ public list[tuple[loc, Statement]] getMethodBodies(list[Declaration] asts) {
     return bodies;
 }
 
+// Returns true if membersA is a strict subset of membersB:
+// - every location in A is also in B
+// - and A has fewer elements than B
+bool isStrictSubset(list[loc] membersA, list[loc] membersB) {
+    // If A is not smaller than B, it cannot be a strict subset
+    if (size(membersA) >= size(membersB)) {
+        return false;
+    }
+
+    // Check that every location in A appears in B
+    for (loc l <- membersA) {
+        if (l notin membersB) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Remove clone classes that are strictly included in others (subsumption).
+ *
+ * A class C_i is removed if its members list is a strict subset
+ * of the members of some other class C_j.
+ */
+public list[CloneClass] removeSubsumedClasses(list[CloneClass] classes) {
+    set[int] subsumed = {};        // indices of classes to drop
+    int n = size(classes);
+
+    // Compare each pair of classes (i, j)
+    for (int i <- [0..n-1]) {
+        if (i in subsumed) {
+            continue;
+        }
+
+        CloneClass ci = classes[i];
+
+        for (int j <- [0..n-1]) {
+            if (i == j) {
+                continue;
+            }
+            if (j in subsumed) {
+                continue;
+            }
+
+            CloneClass cj = classes[j];
+
+            // Pattern match to get the member lists
+            list[loc] membersI;
+            list[loc] membersJ;
+
+            switch (ci) {
+                case cloneClass(_, list[loc] msI): {
+                    membersI = msI;
+                }
+            }
+            switch (cj) {
+                case cloneClass(_, list[loc] msJ): {
+                    membersJ = msJ;
+                }
+            }
+
+            // If Ci is strictly included in Cj, mark Ci as subsumed
+            if (isStrictSubset(membersI, membersJ)) {
+                subsumed += { i };
+                break;  // no need to compare Ci with other classes
+            }
+        }
+    }
+
+    // Build the result list without the subsumed classes
+    list[CloneClass] result = [];
+    for (int k <- [0..n-1]) {
+        if (k notin subsumed) {
+            result += [classes[k]];
+        }
+    }
+
+    return result;
+}
+
+
+
 /**
  * AST-based Type 1 clone detection on method bodies.
  * Type 1 = identical normalized AST subtrees (locations removed).
